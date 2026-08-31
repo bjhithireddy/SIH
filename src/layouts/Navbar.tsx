@@ -9,9 +9,7 @@ import {
   MapPin, 
   Menu, 
   Sparkles, 
-  ShieldCheck,
-  CheckCircle2,
-  AlertTriangle
+  Truck
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -104,8 +102,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
           </div>
         </div>
 
-        {/* Right: Language Selector, Live Telemetry Indicator, Notifications & User */}
+        {/* Right: Driver App Switcher, Language Selector, Notifications & User */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Quick Switch to Stitch Driver App */}
+          <Link
+            to="/driver"
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-govblue-600 to-sky-500 hover:from-govblue-500 hover:to-sky-400 text-white text-xs font-black transition-all flex items-center gap-1.5 shadow-md shrink-0 scale-100 hover:scale-105 active:scale-95"
+            title="Open Stitch Driver Mobile Interface (LogiDrive)"
+          >
+            <Truck className="w-4 h-4 text-sky-200" />
+            <span>Driver Mode</span>
+          </Link>
+
           {/* 🌐 Visible Multi-Language Selector */}
           <LanguageSelector variant="navbar" />
 
@@ -119,7 +127,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 rounded-lg text-slate-300 hover:text-white hover:bg-navy-900 transition-colors"
+              className="relative p-2 rounded-lg text-slate-300 hover:text-white hover:bg-navy-900 transition-colors cursor-pointer"
               aria-label="View notifications"
             >
               <Bell className="w-5 h-5" />
@@ -147,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                       setShowNotifications(false);
                       navigate('/alerts');
                     }}
-                    className="text-xs font-semibold text-govblue-600 hover:underline"
+                    className="text-xs font-semibold text-govblue-600 hover:underline cursor-pointer"
                   >
                     {t('dashboard.viewAll', 'View All')}
                   </button>
@@ -184,7 +192,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                       setShowNotifications(false);
                       navigate('/alerts');
                     }}
-                    className="w-full py-1 text-xs font-semibold text-govblue-700 hover:text-govblue-900"
+                    className="w-full py-1 text-xs font-semibold text-govblue-700 hover:text-govblue-900 cursor-pointer"
                   >
                     {t('alerts.title', 'Emergency Alert Center')} →
                   </button>
