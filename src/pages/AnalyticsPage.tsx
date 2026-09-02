@@ -6,6 +6,7 @@ import { ChartCard } from '../components/common/ChartCard';
 import { KPICard } from '../components/common/KPICard';
 import { AIBadge } from '../components/common/AIBadge';
 import { ANALYTICS_DATA } from '../data/analyticsData';
+import { DataStreamInspector } from '../components/common/DataStreamInspector';
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -270,6 +271,9 @@ export const AnalyticsPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Live Regional Ingestion Architecture & Data Catalog Inspector */}
+      <DataStreamInspector />
     </div>
   );
 };
