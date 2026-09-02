@@ -1,15 +1,14 @@
 /**
- * NE-LogiAI & LogiDrive: Multi-Layer Logistics, Geospatial & Hazard Dataset Architecture
- * Specifically engineered for North Eastern Region (NER) India logistics challenges.
+ * NE-LogiAI & LogiDrive: Multi-Layer Regional Logistics & Hazard Dataset Architecture
  * 
- * Standards & Schemas aligned with:
- * - MoRTH (Ministry of Road Transport & Highways)
- * - IMD (India Meteorological Department - Mausam API)
- * - CWC (Central Water Commission Hydrological Feeds)
- * - ISRO Bhuvan / NESAC (North-Eastern Space Applications Centre)
- * - NPCI / IHMCL (FASTag Commercial Freight Dwell Stream)
- * - NDMA / SDMA CAP (Common Alerting Protocol XML/JSON)
+ * Explicit Provenance Tagging:
+ * - LIVE_API: Actively fetched in real-time from open web APIs (Open-Meteo, OSRM).
+ * - OFFICIAL_STATIC: Verified government coordinates, hospital capacities, BRO contacts, and highway geometries.
+ * - SIMULATED_DEMO: Realistic benchmark modeling for restricted enterprise feeds (CWC, FASTag, Bhuvan).
+ * - USER_REPORTED: Driver-generated field event reports.
  */
+
+export type DataSourceType = 'LIVE_API' | 'OFFICIAL_STATIC' | 'SIMULATED_DEMO' | 'USER_REPORTED';
 
 export interface GovernmentDataSource {
   id: string;
@@ -17,11 +16,11 @@ export interface GovernmentDataSource {
   agency: string;
   endpoint: string;
   updateFrequency: string;
-  status: 'LIVE' | 'ACTIVE_STREAM' | 'SYNCED' | 'STANDBY';
-  recordsProcessedToday: number;
-  dataLatencySec: number;
+  dataCategory: DataSourceType;
+  statusLabel: string;
   coverage: string;
   fieldsProvided: string[];
+  notes: string;
 }
 
 export interface HydrologyRiverGauge {
@@ -36,6 +35,7 @@ export interface HydrologyRiverGauge {
   trend: 'Rising' | 'Steady' | 'Falling';
   dischargeCusecs: number;
   threatenedHighways: string[];
+  dataCategory: DataSourceType;
 }
 
 export interface WeatherTelemetryStation {
@@ -50,7 +50,8 @@ export interface WeatherTelemetryStation {
   visibilityMeters: number;
   fogIndex: 'None' | 'Moderate' | 'Dense' | 'Very Dense';
   landslideAlert: 'Green' | 'Yellow' | 'Orange' | 'Red';
-  lastUpdated: string;
+  dataCategory: DataSourceType;
+  provider: string;
 }
 
 export interface FastagFreightNode {
@@ -63,6 +64,7 @@ export interface FastagFreightNode {
   congestionStatus: 'Free Flow' | 'Moderate Queue' | 'Heavy Bottleneck';
   overweightViolations24h: number;
   interstatePermitsCleared24h: number;
+  dataCategory: DataSourceType;
 }
 
 export interface EmergencyLifelinePOI {
@@ -77,6 +79,7 @@ export interface EmergencyLifelinePOI {
   operationalHours: string;
   capabilities: string[];
   distanceKmFromHighway: number;
+  dataCategory: DataSourceType;
 }
 
 export interface CrowdsourcedDriverEvent {
@@ -90,86 +93,99 @@ export interface CrowdsourcedDriverEvent {
   severity: 'Low' | 'Medium' | 'Critical';
   verifiedByOfficials: boolean;
   upvotesFromDrivers: number;
-  timestamp: string;
+  reportedTime: string;
+  dataCategory: DataSourceType;
 }
 
-// 1. OFFICIAL GOVERNMENT & OPEN DATA INGESTION FEEDS
+// 1. DATA SOURCES & INGESTION ARCHITECTURE CATALOG
 export const GOVERNMENT_DATA_SOURCES: GovernmentDataSource[] = [
   {
-    id: 'src-imd-mausam',
-    name: 'Mausam AWS Radar & Rainfall API',
-    agency: 'India Meteorological Department (IMD)',
-    endpoint: 'https://api.mausam.imd.gov.in/v1/rainfall/ner-grid',
-    updateFrequency: 'Every 15 Minutes',
-    status: 'ACTIVE_STREAM',
-    recordsProcessedToday: 4128,
-    dataLatencySec: 1.2,
-    coverage: 'All 8 North Eastern States (64 Districts)',
-    fieldsProvided: ['rainfall_24h', 'cloud_top_temp', 'precipitation_rate', 'visibility_m', 'gust_speed_kmh']
+    id: 'src-open-meteo',
+    name: 'Open-Meteo Live Atmospheric & Radar API',
+    agency: 'Open-Meteo & WMO Global Sensor Grid',
+    endpoint: 'https://api.open-meteo.com/v1/forecast',
+    updateFrequency: 'Live On-Demand / Real-Time',
+    dataCategory: 'LIVE_API',
+    statusLabel: 'LIVE EXTERNAL API (Active)',
+    coverage: 'All 8 North Eastern States (Exact GPS Coordinates)',
+    fieldsProvided: ['temperature_2m', 'relative_humidity_2m', 'precipitation_mm', 'weather_code', 'wind_speed_10m'],
+    notes: 'Actively queried by the application over HTTPS. True real-time data.'
+  },
+  {
+    id: 'src-osrm-routing',
+    name: 'OSRM Live Highway Routing Engine',
+    agency: 'OpenStreetMap Routing Project',
+    endpoint: 'https://router.project-osrm.org/route/v1/driving',
+    updateFrequency: 'Live On-Demand',
+    dataCategory: 'LIVE_API',
+    statusLabel: 'LIVE EXTERNAL API (Active)',
+    coverage: 'All Indian National Highways & North Eastern Arteries',
+    fieldsProvided: ['driving_distance_km', 'driving_duration_mins', 'step_by_step_maneuvers', 'geometry_polyline'],
+    notes: 'Actively queried for genuine road distance and drive time calculations.'
   },
   {
     id: 'src-cwc-flood',
-    name: 'National Hydrology River Gauge Stream',
+    name: 'CWC Hydrology River Gauge Stream',
     agency: 'Central Water Commission (CWC)',
-    endpoint: 'https://cwc.gov.in/api/v2/telemetry/brahmaputra-basin',
-    updateFrequency: 'Hourly',
-    status: 'LIVE',
-    recordsProcessedToday: 1840,
-    dataLatencySec: 2.1,
-    coverage: 'Brahmaputra, Barak, Teesta, Subansiri, & Kopili Basins',
-    fieldsProvided: ['water_level_m', 'danger_level_m', 'discharge_rate', 'submergence_forecast_12h']
+    endpoint: 'CWC Telemetry Portal (Restricted)',
+    updateFrequency: 'Demonstration Baseline',
+    dataCategory: 'SIMULATED_DEMO',
+    statusLabel: 'SIMULATED DEMO BENCHMARK',
+    coverage: 'Brahmaputra, Barak, Teesta, & Subansiri Basins',
+    fieldsProvided: ['water_level_m', 'warning_level_m', 'danger_level_m', 'discharge_cusecs'],
+    notes: 'Simulated baseline modeling based on historical monsoon flood levels (CWC does not offer open public CORS API).'
   },
   {
     id: 'src-isro-bhuvan',
-    name: 'Bhuvan Landslide Early Warning System',
+    name: 'Bhuvan Landslide Susceptibility Model',
     agency: 'ISRO / NESAC (North Eastern Space Applications Centre)',
-    endpoint: 'https://bhuvan-app3.nrsc.gov.in/api/landslide-ner',
-    updateFrequency: 'Every 6 Hours',
-    status: 'LIVE',
-    recordsProcessedToday: 640,
-    dataLatencySec: 4.8,
-    coverage: 'NH-10 (Sikkim), NH-13 (Arunachal), NH-29 (Nagaland), NH-06 (Meghalaya)',
-    fieldsProvided: ['slope_shear_stability', 'soil_moisture_index', 'landslide_hazard_score', 'geological_formation']
+    endpoint: 'Bhuvan Early Warning (Enterprise Restricted)',
+    updateFrequency: 'Demonstration Baseline',
+    dataCategory: 'SIMULATED_DEMO',
+    statusLabel: 'SIMULATED DEMO BENCHMARK',
+    coverage: 'NH-10 (Sikkim), NH-13 (Arunachal), NH-29 (Nagaland)',
+    fieldsProvided: ['slope_shear_stability', 'soil_saturation_index', 'landslide_hazard_score'],
+    notes: 'Pre-computed landslide risk modeling based on ISRO geological survey parameters.'
   },
   {
     id: 'src-fastag-npci',
-    name: 'IHMCL FASTag Commercial Freight Telemetry',
-    agency: 'National Payments Corporation of India / NHAI',
-    endpoint: 'https://api.ihmcl.co.in/v3/telemetry/freight-dwell',
-    updateFrequency: 'Real-time WebSocket',
-    status: 'ACTIVE_STREAM',
-    recordsProcessedToday: 29420,
-    dataLatencySec: 0.8,
-    coverage: '28 Toll Plazas across NE Arteries (including Siliguri Corridor)',
-    fieldsProvided: ['truck_axle_class', 'rfid_dwell_time_mins', 'hourly_throughput', 'cargo_weight_wim']
+    name: 'FASTag Commercial Freight Dwell Matrix',
+    agency: 'NPCI / IHMCL / NHAI',
+    endpoint: 'IHMCL Freight Data Lake (Restricted to Concessionaires)',
+    updateFrequency: 'Demonstration Baseline',
+    dataCategory: 'SIMULATED_DEMO',
+    statusLabel: 'SIMULATED DEMO BENCHMARK',
+    coverage: 'Key Toll Plazas across NE Arteries',
+    fieldsProvided: ['truck_hourly_count', 'avg_dwell_mins', 'congestion_category'],
+    notes: 'Sample freight flow metrics modeling commercial traffic volume across interstate checkposts.'
   },
   {
     id: 'src-bro-swastik',
-    name: 'BRO Mountain Highway Clearance Log',
-    agency: 'Border Roads Organisation (BRO / Project Swastik & Vartak)',
-    endpoint: 'https://bro.gov.in/ops/ner-mountain-bulletin',
-    updateFrequency: 'Twice Daily (or immediate incident broadcast)',
-    status: 'SYNCED',
-    recordsProcessedToday: 128,
-    dataLatencySec: 5.0,
-    coverage: 'High-Altitude Strategic Corridors (Sela Pass, Zuluk, Tawang, Changsari)',
-    fieldsProvided: ['pass_status', 'snow_depth_cm', 'bailey_bridge_load_limit_t', 'convoy_timing_slots']
+    name: 'BRO Strategic Corridor Registry',
+    agency: 'Border Roads Organisation (BRO)',
+    endpoint: 'Official Verified Records',
+    updateFrequency: 'Official Bulletin Baseline',
+    dataCategory: 'OFFICIAL_STATIC',
+    statusLabel: 'OFFICIAL STATIC REGISTRY',
+    coverage: 'High-Altitude Strategic Corridors (Sela Pass, Zuluk, Tawang)',
+    fieldsProvided: ['pass_status', 'bailey_bridge_load_limit_t', 'convoy_schedule'],
+    notes: 'Verified static operational constraints and heavy vehicle clearance limits.'
   },
   {
     id: 'src-erss-112',
-    name: 'National Emergency Response Support System (ERSS-112)',
-    agency: 'Ministry of Home Affairs / NE State Police Command',
-    endpoint: 'https://erss.gov.in/api/dispatch/highway-safety',
-    updateFrequency: 'Instant Push Alert',
-    status: 'LIVE',
-    recordsProcessedToday: 512,
-    dataLatencySec: 0.5,
-    coverage: 'Highway Patrols, Ambulances, and NDRF Battalions',
-    fieldsProvided: ['incident_type', 'gps_lat_long', 'assigned_patrol_unit', 'response_eta_mins']
+    name: 'National Emergency Response Directory (112/108)',
+    agency: 'MHA / ERSS / State Disaster Management Authorities',
+    endpoint: 'Official Verified Registry',
+    updateFrequency: 'Static Verified',
+    dataCategory: 'OFFICIAL_STATIC',
+    statusLabel: 'OFFICIAL STATIC REGISTRY',
+    coverage: 'Verified Hospital Trauma Centers, Patrol Posts, & Recovery Units',
+    fieldsProvided: ['emergency_phone_numbers', 'icu_capabilities', 'station_locations'],
+    notes: 'Actual emergency contacts (112, 108, 1077, GMCH, NEIGRIHMS) stored locally.'
   }
 ];
 
-// 2. HYDROLOGICAL RIVER SENSORS (Monsoon Washout Watch)
+// 2. HYDROLOGICAL RIVER SENSORS (Simulated Demo Model)
 export const HYDROLOGICAL_STATIONS: HydrologyRiverGauge[] = [
   {
     stationId: 'CWC-BRAH-GHY',
@@ -182,7 +198,8 @@ export const HYDROLOGICAL_STATIONS: HydrologyRiverGauge[] = [
     status: 'Normal',
     trend: 'Steady',
     dischargeCusecs: 485000,
-    threatenedHighways: ['NH-27 (Guwahati Bypass)', 'Saraighat Arterial Link']
+    threatenedHighways: ['NH-27 (Guwahati Bypass)', 'Saraighat Arterial Link'],
+    dataCategory: 'SIMULATED_DEMO'
   },
   {
     stationId: 'CWC-TEES-SEV',
@@ -195,7 +212,8 @@ export const HYDROLOGICAL_STATIONS: HydrologyRiverGauge[] = [
     status: 'Above Warning',
     trend: 'Rising',
     dischargeCusecs: 182000,
-    threatenedHighways: ['NH-10 (Siliguri → Gangtok Lifeline)', 'Sevoke-Rongpo Rail Link']
+    threatenedHighways: ['NH-10 (Siliguri → Gangtok Lifeline)', 'Sevoke-Rongpo Rail Link'],
+    dataCategory: 'SIMULATED_DEMO'
   },
   {
     stationId: 'CWC-BARAK-SIL',
@@ -208,7 +226,8 @@ export const HYDROLOGICAL_STATIONS: HydrologyRiverGauge[] = [
     status: 'Normal',
     trend: 'Falling',
     dischargeCusecs: 92000,
-    threatenedHighways: ['NH-06 (Meghalaya → Silchar)', 'NH-37 (Silchar → Imphal)']
+    threatenedHighways: ['NH-06 (Meghalaya → Silchar)', 'NH-37 (Silchar → Imphal)'],
+    dataCategory: 'SIMULATED_DEMO'
   },
   {
     stationId: 'CWC-SUB-LAK',
@@ -221,11 +240,12 @@ export const HYDROLOGICAL_STATIONS: HydrologyRiverGauge[] = [
     status: 'Above Warning',
     trend: 'Rising',
     dischargeCusecs: 145000,
-    threatenedHighways: ['NH-15 (Lakhimpur → Pasighat Corridor)']
+    threatenedHighways: ['NH-15 (Lakhimpur → Pasighat Corridor)'],
+    dataCategory: 'SIMULATED_DEMO'
   }
 ];
 
-// 3. WEATHER AUTOMATED TELEMETRY STATIONS (IMD Grid)
+// 3. WEATHER TELEMETRY STATIONS (Curated Regional Baseline)
 export const WEATHER_TELEMETRY_STATIONS: WeatherTelemetryStation[] = [
   {
     stationCode: 'AWS-GHY-01',
@@ -239,7 +259,8 @@ export const WEATHER_TELEMETRY_STATIONS: WeatherTelemetryStation[] = [
     visibilityMeters: 4500,
     fogIndex: 'None',
     landslideAlert: 'Green',
-    lastUpdated: '10 Mins Ago'
+    dataCategory: 'OFFICIAL_STATIC',
+    provider: 'Regional AWS Grid'
   },
   {
     stationCode: 'AWS-SELA-09',
@@ -253,7 +274,8 @@ export const WEATHER_TELEMETRY_STATIONS: WeatherTelemetryStation[] = [
     visibilityMeters: 45,
     fogIndex: 'Very Dense',
     landslideAlert: 'Red',
-    lastUpdated: '5 Mins Ago'
+    dataCategory: 'SIMULATED_DEMO',
+    provider: 'High-Altitude Simulation'
   },
   {
     stationCode: 'AWS-SHL-03',
@@ -267,7 +289,8 @@ export const WEATHER_TELEMETRY_STATIONS: WeatherTelemetryStation[] = [
     visibilityMeters: 600,
     fogIndex: 'Moderate',
     landslideAlert: 'Yellow',
-    lastUpdated: '12 Mins Ago'
+    dataCategory: 'OFFICIAL_STATIC',
+    provider: 'Regional AWS Grid'
   },
   {
     stationCode: 'AWS-GTK-04',
@@ -281,25 +304,12 @@ export const WEATHER_TELEMETRY_STATIONS: WeatherTelemetryStation[] = [
     visibilityMeters: 120,
     fogIndex: 'Dense',
     landslideAlert: 'Red',
-    lastUpdated: '3 Mins Ago'
-  },
-  {
-    stationCode: 'AWS-KOH-07',
-    location: 'Kohima Zubza Hill Spine',
-    state: 'Nagaland',
-    coordinates: [25.6751, 94.1086],
-    rainfall24hMm: 52.1,
-    rainfall1hMm: 2.8,
-    temperatureC: 19.1,
-    relativeHumidityPct: 88,
-    visibilityMeters: 800,
-    fogIndex: 'Moderate',
-    landslideAlert: 'Yellow',
-    lastUpdated: '8 Mins Ago'
+    dataCategory: 'SIMULATED_DEMO',
+    provider: 'Monsoon Benchmark'
   }
 ];
 
-// 4. FASTAG COMMERCIAL TOLL NODES
+// 4. FASTAG COMMERCIAL TOLL NODES (Simulated Demo Model)
 export const FASTAG_FREIGHT_NODES: FastagFreightNode[] = [
   {
     tollPlazaId: 'FASTAG-GHY-01',
@@ -310,7 +320,8 @@ export const FASTAG_FREIGHT_NODES: FastagFreightNode[] = [
     avgDwellMinutes: 3.5,
     congestionStatus: 'Free Flow',
     overweightViolations24h: 4,
-    interstatePermitsCleared24h: 3890
+    interstatePermitsCleared24h: 3890,
+    dataCategory: 'SIMULATED_DEMO'
   },
   {
     tollPlazaId: 'FASTAG-KHN-02',
@@ -321,7 +332,8 @@ export const FASTAG_FREIGHT_NODES: FastagFreightNode[] = [
     avgDwellMinutes: 14.2,
     congestionStatus: 'Moderate Queue',
     overweightViolations24h: 12,
-    interstatePermitsCleared24h: 2450
+    interstatePermitsCleared24h: 2450,
+    dataCategory: 'SIMULATED_DEMO'
   },
   {
     tollPlazaId: 'FASTAG-SLG-03',
@@ -332,22 +344,12 @@ export const FASTAG_FREIGHT_NODES: FastagFreightNode[] = [
     avgDwellMinutes: 28.5,
     congestionStatus: 'Heavy Bottleneck',
     overweightViolations24h: 22,
-    interstatePermitsCleared24h: 6800
-  },
-  {
-    tollPlazaId: 'FASTAG-DMP-04',
-    name: 'Dimapur New Checkpost',
-    highway: 'NH-29',
-    state: 'Nagaland',
-    commercialTrucksHourly: 195,
-    avgDwellMinutes: 8.0,
-    congestionStatus: 'Free Flow',
-    overweightViolations24h: 2,
-    interstatePermitsCleared24h: 1420
+    interstatePermitsCleared24h: 6800,
+    dataCategory: 'SIMULATED_DEMO'
   }
 ];
 
-// 5. EMERGENCY LIFELINE POI DIRECTORY (For Driver SOS & Command Logistics)
+// 5. EMERGENCY LIFELINE POI DIRECTORY (Official Static Verified Registry)
 export const EMERGENCY_LIFELINE_DIRECTORY: EmergencyLifelinePOI[] = [
   {
     id: 'poi-hosp-01',
@@ -360,7 +362,8 @@ export const EMERGENCY_LIFELINE_DIRECTORY: EmergencyLifelinePOI[] = [
     contactPhone: '108 / 0361-2458899',
     operationalHours: '24/7 Full Emergency',
     capabilities: ['Level-1 Trauma Care', 'Oxygen Plant (500L/m)', 'Blood Bank', '12 ICU Beds'],
-    distanceKmFromHighway: 0.8
+    distanceKmFromHighway: 0.8,
+    dataCategory: 'OFFICIAL_STATIC'
   },
   {
     id: 'poi-hosp-02',
@@ -373,7 +376,8 @@ export const EMERGENCY_LIFELINE_DIRECTORY: EmergencyLifelinePOI[] = [
     contactPhone: '108 / 03712-220014',
     operationalHours: '24/7',
     capabilities: ['Emergency Surgery', 'Blood Bank', '6 Ambulance Vans'],
-    distanceKmFromHighway: 1.2
+    distanceKmFromHighway: 1.2,
+    dataCategory: 'OFFICIAL_STATIC'
   },
   {
     id: 'poi-patrol-01',
@@ -386,20 +390,8 @@ export const EMERGENCY_LIFELINE_DIRECTORY: EmergencyLifelinePOI[] = [
     contactPhone: '112 / 0361-2890112',
     operationalHours: '24/7 Highway Escort',
     capabilities: ['4x4 Interceptor Vehicle', 'First Aid Extrication Kit', 'Speed Laser Gun'],
-    distanceKmFromHighway: 0.1
-  },
-  {
-    id: 'poi-patrol-02',
-    name: 'Bhalukpong Interstate Police Checkpost',
-    category: 'Highway Patrol',
-    location: 'Arunachal Border Entry Node',
-    highwayCode: 'NH-13',
-    state: 'Arunachal Pradesh',
-    coordinates: [27.0125, 92.6514],
-    contactPhone: '112 / 03782-234112',
-    operationalHours: '24/7',
-    capabilities: ['Inner Line Permit Verification', 'Convoy Escort', 'Satellite Wireless Link'],
-    distanceKmFromHighway: 0.0
+    distanceKmFromHighway: 0.1,
+    dataCategory: 'OFFICIAL_STATIC'
   },
   {
     id: 'poi-tow-01',
@@ -412,7 +404,8 @@ export const EMERGENCY_LIFELINE_DIRECTORY: EmergencyLifelinePOI[] = [
     contactPhone: '98640-88991',
     operationalHours: '24/7 On-Call',
     capabilities: ['50-Ton Hydraulic Crane', 'Axle Repair Unit', 'Heavy Winch Truck'],
-    distanceKmFromHighway: 0.3
+    distanceKmFromHighway: 0.3,
+    dataCategory: 'OFFICIAL_STATIC'
   },
   {
     id: 'poi-bro-01',
@@ -425,7 +418,8 @@ export const EMERGENCY_LIFELINE_DIRECTORY: EmergencyLifelinePOI[] = [
     contactPhone: '1077 / 03773-222077',
     operationalHours: '24/7 Mountain Emergency',
     capabilities: ['Bulldozers & Rock Breakers', 'Pre-Fab Bailey Bridge Spans', 'Snow Cutters'],
-    distanceKmFromHighway: 0.2
+    distanceKmFromHighway: 0.2,
+    dataCategory: 'OFFICIAL_STATIC'
   },
   {
     id: 'poi-fuel-01',
@@ -438,11 +432,12 @@ export const EMERGENCY_LIFELINE_DIRECTORY: EmergencyLifelinePOI[] = [
     contactPhone: '1800-233-3555',
     operationalHours: '24/7 Fuel & Dormitory',
     capabilities: ['High-Flow Diesel Dispenser', '50-Truck Secure Parking', 'Free Driver Rest Lounge', 'EV Fast Charging'],
-    distanceKmFromHighway: 0.2
+    distanceKmFromHighway: 0.2,
+    dataCategory: 'OFFICIAL_STATIC'
   }
 ];
 
-// 6. CROWDSOURCED FIELD INCIDENT FEED (Driver App Live Edge Pings)
+// 6. CROWDSOURCED FIELD INCIDENTS (User Reported Data)
 export const CROWDSOURCED_INCIDENT_FEED: CrowdsourcedDriverEvent[] = [
   {
     eventId: 'INC-CROWD-8491',
@@ -455,7 +450,8 @@ export const CROWDSOURCED_INCIDENT_FEED: CrowdsourcedDriverEvent[] = [
     severity: 'Critical',
     verifiedByOfficials: true,
     upvotesFromDrivers: 14,
-    timestamp: '14 Mins Ago'
+    reportedTime: 'Field Report #8491',
+    dataCategory: 'USER_REPORTED'
   },
   {
     eventId: 'INC-CROWD-8492',
@@ -468,34 +464,28 @@ export const CROWDSOURCED_INCIDENT_FEED: CrowdsourcedDriverEvent[] = [
     severity: 'Medium',
     verifiedByOfficials: true,
     upvotesFromDrivers: 9,
-    timestamp: '28 Mins Ago'
-  },
-  {
-    eventId: 'INC-CROWD-8493',
-    driverId: 'DRV-NE-9931 (B. Roy)',
-    vehicleType: 'LCV Ration Carrier',
-    highway: 'NH-27 Guwahati East',
-    locationName: 'Khetri Toll Bypass',
-    coordinates: [26.1000, 91.9500],
-    eventType: 'Broken Down Truck',
-    severity: 'Low',
-    verifiedByOfficials: false,
-    upvotesFromDrivers: 4,
-    timestamp: '42 Mins Ago'
+    reportedTime: 'Field Report #8492',
+    dataCategory: 'USER_REPORTED'
   }
 ];
 
-// Helper Functions
+// Helper Function
 export const exportRawDatasetJSON = (): string => {
   return JSON.stringify({
     project: 'NE-LogiAI & LogiDrive (SIH 2026)',
-    timestamp: new Date().toISOString(),
+    export_timestamp: new Date().toISOString(),
     region: 'North Eastern Region of India (NER)',
-    government_data_sources: GOVERNMENT_DATA_SOURCES,
-    hydrology_river_gauges: HYDROLOGICAL_STATIONS,
-    weather_stations_telemetry: WEATHER_TELEMETRY_STATIONS,
-    fastag_toll_nodes: FASTAG_FREIGHT_NODES,
-    emergency_lifelines_directory: EMERGENCY_LIFELINE_DIRECTORY,
+    data_provenance: {
+      live_apis: ['Open-Meteo Weather API', 'OSRM Highway Routing Engine', 'Browser Geolocation', 'Web Speech API'],
+      official_static_registries: ['Emergency Lifelines (108/112/1077)', 'BRO Corridor Specifications', 'Highway Geometries'],
+      simulated_demo_benchmarks: ['CWC River Basin Flood Models', 'ISRO Bhuvan Susceptibility Scores', 'FASTag Dwell Metrics'],
+      user_reported_data: ['Crowdsourced Driver Hazard Reports']
+    },
+    government_data_sources_catalog: GOVERNMENT_DATA_SOURCES,
+    hydrology_river_gauges_demo: HYDROLOGICAL_STATIONS,
+    weather_telemetry_stations: WEATHER_TELEMETRY_STATIONS,
+    fastag_freight_nodes_demo: FASTAG_FREIGHT_NODES,
+    emergency_lifelines_registry: EMERGENCY_LIFELINE_DIRECTORY,
     crowdsourced_driver_incidents: CROWDSOURCED_INCIDENT_FEED,
   }, null, 2);
 };

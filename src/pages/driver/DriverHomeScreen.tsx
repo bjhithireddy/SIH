@@ -56,10 +56,10 @@ export const DriverHomeScreen: React.FC = () => {
       <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs">
         <div className="flex items-center gap-1.5 font-bold">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Real-Time Weather & OSRM Telemetry Active</span>
+          <span>LIVE EXTERNAL API (Open-Meteo Weather Stream)</span>
         </div>
         <span className="font-mono text-[10px] text-emerald-700 font-semibold">
-          {liveWeather?.lastUpdated ? `Live: ${liveWeather.lastUpdated}` : 'Live Stream'}
+          {liveWeather?.lastUpdated ? `Server Time: ${liveWeather.lastUpdated}` : 'Connecting...'}
         </span>
       </div>
 

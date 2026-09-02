@@ -15,7 +15,7 @@ import {
   Copy, 
   ExternalLink,
   ChevronRight,
-  RefreshCw
+  Info
 } from 'lucide-react';
 import { 
   GOVERNMENT_DATA_SOURCES, 
@@ -24,7 +24,8 @@ import {
   FASTAG_FREIGHT_NODES, 
   EMERGENCY_LIFELINE_DIRECTORY, 
   CROWDSOURCED_INCIDENT_FEED,
-  exportRawDatasetJSON 
+  exportRawDatasetJSON,
+  DataSourceType
 } from '../../data/collectedDatasets';
 import { useToast } from '../../context/ToastContext';
 
@@ -39,12 +40,12 @@ export const DataStreamInspector: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `NE_LogiAI_SIH2026_Dataset_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `NE_LogiAI_SIH2026_Data_Provenance_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    addToast('Dataset Downloaded', 'Exported complete North Eastern logistics & hazard dataset (JSON).', 'success');
+    addToast('Dataset Downloaded', 'Exported complete dataset with explicit provenance tags (JSON).', 'success');
   };
 
   const handleCopyJSON = () => {
@@ -52,7 +53,39 @@ export const DataStreamInspector: React.FC = () => {
     navigator.clipboard.writeText(dataStr);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2500);
-    addToast('Copied to Clipboard', 'Raw JSON schema copied.', 'info');
+    addToast('Copied to Clipboard', 'Dataset schema copied.', 'info');
+  };
+
+  const renderProvenanceBadge = (type: DataSourceType) => {
+    switch (type) {
+      case 'LIVE_API':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>LIVE EXTERNAL API</span>
+          </span>
+        );
+      case 'OFFICIAL_STATIC':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-govblue-100 text-govblue-800 border border-govblue-300">
+            OFFICIAL STATIC REGISTRY
+          </span>
+        );
+      case 'SIMULATED_DEMO':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-100 text-amber-800 border border-amber-300">
+            SIMULATED DEMO BENCHMARK
+          </span>
+        );
+      case 'USER_REPORTED':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-100 text-purple-800 border border-purple-300">
+            USER REPORTED (FIELD DATA)
+          </span>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -66,10 +99,10 @@ export const DataStreamInspector: React.FC = () => {
             </div>
             <div>
               <h3 className="text-lg font-black text-navy-950">
-                Multi-Layer Regional Data Catalog & Live Ingestion Feeds
+                Data Provenance & Ingestion Architecture Catalog
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Live simulated government API streams, hydrology gauges, and crowdsourced driver telemetry.
+                Transparent classification of live external APIs, official static registries, and simulated demo models.
               </p>
             </div>
           </div>
@@ -95,39 +128,39 @@ export const DataStreamInspector: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Stream Counters */}
+      {/* Honest Provenance Summary Counters */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <div className="text-[11px] font-bold text-slate-500 uppercase">Active Streams</div>
-          <div className="text-xl font-black text-emerald-700 mt-0.5 flex items-center gap-1.5">
+        <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200">
+          <div className="text-[11px] font-bold text-emerald-800 uppercase">Live External APIs</div>
+          <div className="text-xl font-black text-emerald-900 mt-0.5 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>6/6 Online</span>
+            <span>2 Live APIs</span>
           </div>
-          <div className="text-[10px] text-slate-400 font-mono mt-0.5">100% NER Coverage</div>
+          <div className="text-[10px] text-emerald-700 font-mono mt-0.5">Open-Meteo & OSRM</div>
         </div>
 
-        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <div className="text-[11px] font-bold text-slate-500 uppercase">Records Processed / Day</div>
-          <div className="text-xl font-black text-navy-950 mt-0.5 font-mono">
-            36,538
+        <div className="p-3 rounded-xl bg-sky-50/70 border border-sky-200">
+          <div className="text-[11px] font-bold text-sky-800 uppercase">Live Hardware Sensors</div>
+          <div className="text-xl font-black text-navy-950 mt-0.5">
+            Device GPS & Voice
           </div>
-          <div className="text-[10px] text-slate-400 font-mono mt-0.5">Auto-Refreshed</div>
+          <div className="text-[10px] text-sky-700 font-mono mt-0.5">Native Web Speech & GPS</div>
         </div>
 
-        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <div className="text-[11px] font-bold text-slate-500 uppercase">Telemetry Latency</div>
-          <div className="text-xl font-black text-govblue-700 mt-0.5 font-mono">
-            1.4s
-          </div>
-          <div className="text-[10px] text-slate-400 font-mono mt-0.5">Sub-second WebSockets</div>
-        </div>
-
-        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <div className="text-[11px] font-bold text-slate-500 uppercase">Validated Lifeline POIs</div>
+        <div className="p-3 rounded-xl bg-govblue-50/70 border border-govblue-200">
+          <div className="text-[11px] font-bold text-govblue-800 uppercase">Official Static Registry</div>
           <div className="text-xl font-black text-navy-950 mt-0.5 font-mono">
             42 POIs
           </div>
-          <div className="text-[10px] text-slate-400 font-mono mt-0.5">Hospitals, Patrols, BRO</div>
+          <div className="text-[10px] text-govblue-700 font-mono mt-0.5">108 / 112 / BRO / Hospitals</div>
+        </div>
+
+        <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200">
+          <div className="text-[11px] font-bold text-amber-800 uppercase">Simulated Benchmarks</div>
+          <div className="text-xl font-black text-amber-900 mt-0.5 font-mono">
+            3 Models
+          </div>
+          <div className="text-[10px] text-amber-700 font-mono mt-0.5">CWC / FASTag / Bhuvan</div>
         </div>
       </div>
 
@@ -141,7 +174,7 @@ export const DataStreamInspector: React.FC = () => {
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          🏛️ Government APIs (6)
+          🏛️ Ingestion Architecture ({GOVERNMENT_DATA_SOURCES.length})
         </button>
 
         <button
@@ -152,7 +185,7 @@ export const DataStreamInspector: React.FC = () => {
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          🌊 CWC River Gauges (4)
+          🌊 CWC River Flood Models ({HYDROLOGICAL_STATIONS.length})
         </button>
 
         <button
@@ -163,7 +196,7 @@ export const DataStreamInspector: React.FC = () => {
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          🌧️ IMD Weather Stations (5)
+          🌧️ Regional Weather Telemetry ({WEATHER_TELEMETRY_STATIONS.length})
         </button>
 
         <button
@@ -174,7 +207,7 @@ export const DataStreamInspector: React.FC = () => {
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          🚚 FASTag Freight Nodes (4)
+          🚚 FASTag Freight Dwell Model ({FASTAG_FREIGHT_NODES.length})
         </button>
 
         <button
@@ -185,7 +218,7 @@ export const DataStreamInspector: React.FC = () => {
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          🏥 Lifelines & Patrols (7)
+          🏥 Official Lifeline Directory ({EMERGENCY_LIFELINE_DIRECTORY.length})
         </button>
 
         <button
@@ -196,33 +229,30 @@ export const DataStreamInspector: React.FC = () => {
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          📄 Live JSON Payload
+          📄 Raw JSON Schema
         </button>
       </div>
 
-      {/* Tab Content 1: Government Sources */}
+      {/* Tab Content 1: Ingestion Sources Catalog */}
       {activeTab === 'sources' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {GOVERNMENT_DATA_SOURCES.map((src) => (
-            <div key={src.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
+            <div key={src.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2.5">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h4 className="text-sm font-black text-navy-950">{src.name}</h4>
                   <p className="text-xs text-govblue-700 font-bold">{src.agency}</p>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                  {src.status}
-                </span>
+                {renderProvenanceBadge(src.dataCategory)}
               </div>
 
               <div className="font-mono text-[11px] text-slate-500 bg-white p-2 rounded-lg border border-slate-200 truncate">
                 {src.endpoint}
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
-                <div>Frequency: <strong className="text-navy-900">{src.updateFrequency}</strong></div>
-                <div>Latency: <strong className="text-navy-900">{src.dataLatencySec}s</strong></div>
-              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {src.notes}
+              </p>
 
               <div className="flex flex-wrap gap-1 pt-1">
                 {src.fieldsProvided.map((fld) => (
@@ -236,121 +266,141 @@ export const DataStreamInspector: React.FC = () => {
         </div>
       )}
 
-      {/* Tab Content 2: Hydrology River Gauges */}
+      {/* Tab Content 2: Hydrology River Flood Models */}
       {activeTab === 'hydro' && (
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider">
-              <tr>
-                <th className="p-3">Gauge Station</th>
-                <th className="p-3">River</th>
-                <th className="p-3">Current Level</th>
-                <th className="p-3">Warning / Danger</th>
-                <th className="p-3">Status & Trend</th>
-                <th className="p-3">Threatened Corridor</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 bg-white font-medium">
-              {HYDROLOGICAL_STATIONS.map((st) => (
-                <tr key={st.stationId} className="hover:bg-slate-50 transition-colors">
-                  <td className="p-3 font-bold text-navy-950 font-mono">{st.location}</td>
-                  <td className="p-3 text-slate-600">{st.river}</td>
-                  <td className="p-3 font-mono font-bold text-navy-950">{st.currentWaterLevelM} m</td>
-                  <td className="p-3 font-mono text-slate-500">{st.warningLevelM}m / {st.dangerLevelM}m</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                      st.status === 'Normal' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                    }`}>
-                      {st.status} ({st.trend})
-                    </span>
-                  </td>
-                  <td className="p-3 text-slate-600 text-[11px]">{st.threatenedHighways.join(', ')}</td>
+        <div className="space-y-3">
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
+            <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+            <span>
+              <strong>Provenance Notice:</strong> The river levels below represent a <strong>Simulated Monsoon Flood Model</strong> based on Central Water Commission (CWC) historical threshold benchmarks for SIH demonstration.
+            </span>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider">
+                <tr>
+                  <th className="p-3">Gauge Station</th>
+                  <th className="p-3">River</th>
+                  <th className="p-3">Benchmark Level</th>
+                  <th className="p-3">Warning / Danger Level</th>
+                  <th className="p-3">Classification</th>
+                  <th className="p-3">Threatened Corridor</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-200 bg-white font-medium">
+                {HYDROLOGICAL_STATIONS.map((st) => (
+                  <tr key={st.stationId} className="hover:bg-slate-50 transition-colors">
+                    <td className="p-3 font-bold text-navy-950 font-mono">{st.location}</td>
+                    <td className="p-3 text-slate-600">{st.river}</td>
+                    <td className="p-3 font-mono font-bold text-navy-950">{st.currentWaterLevelM} m</td>
+                    <td className="p-3 font-mono text-slate-500">{st.warningLevelM}m / {st.dangerLevelM}m</td>
+                    <td className="p-3">
+                      {renderProvenanceBadge(st.dataCategory)}
+                    </td>
+                    <td className="p-3 text-slate-600 text-[11px]">{st.threatenedHighways.join(', ')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
       {/* Tab Content 3: Weather Telemetry */}
       {activeTab === 'weather' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {WEATHER_TELEMETRY_STATIONS.map((w) => (
-            <div key={w.stationCode} className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-bold text-slate-500">{w.stationCode}</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                  w.landslideAlert === 'Red' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
-                  w.landslideAlert === 'Yellow' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-                  'bg-emerald-100 text-emerald-800'
-                }`}>
-                  Risk: {w.landslideAlert}
-                </span>
+        <div className="space-y-3">
+          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+            <span>
+              <strong>Live Atmospheric Feed:</strong> Real-time temperature and precipitation values on the Driver Dashboard are actively queried over HTTPS from the <strong>Open-Meteo Live API</strong>. The stations below show regional baseline benchmarks.
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {WEATHER_TELEMETRY_STATIONS.map((w) => (
+              <div key={w.stationCode} className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs font-bold text-slate-500">{w.stationCode}</span>
+                  {renderProvenanceBadge(w.dataCategory)}
+                </div>
+                <h4 className="text-sm font-black text-navy-950">{w.location}</h4>
+                <p className="text-[11px] text-slate-500">{w.state} • {w.provider}</p>
+                
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200 text-xs font-mono">
+                  <div>24h Rain: <strong className="text-navy-900">{w.rainfall24hMm} mm</strong></div>
+                  <div>Temp: <strong className="text-navy-900">{w.temperatureC}°C</strong></div>
+                  <div>Visibility: <strong className="text-navy-900">{w.visibilityMeters}m</strong></div>
+                  <div>Alert: <strong className="text-navy-900">{w.landslideAlert}</strong></div>
+                </div>
               </div>
-              <h4 className="text-sm font-black text-navy-950">{w.location}</h4>
-              <p className="text-[11px] text-slate-500">{w.state}</p>
-              
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200 text-xs font-mono">
-                <div>24h Rain: <strong className="text-navy-900">{w.rainfall24hMm} mm</strong></div>
-                <div>Temp: <strong className="text-navy-900">{w.temperatureC}°C</strong></div>
-                <div>Visibility: <strong className="text-navy-900">{w.visibilityMeters}m</strong></div>
-                <div>Fog: <strong className="text-navy-900">{w.fogIndex}</strong></div>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
       {/* Tab Content 4: FASTag Nodes */}
       {activeTab === 'fastag' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {FASTAG_FREIGHT_NODES.map((node) => (
-            <div key={node.tollPlazaId} className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-govblue-700 font-mono">{node.highway}</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                  node.congestionStatus === 'Free Flow' ? 'bg-emerald-100 text-emerald-800' :
-                  node.congestionStatus === 'Moderate Queue' ? 'bg-amber-100 text-amber-800' :
-                  'bg-rose-100 text-rose-800'
-                }`}>
-                  {node.congestionStatus}
-                </span>
+        <div className="space-y-3">
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
+            <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+            <span>
+              <strong>Provenance Notice:</strong> The FASTag freight counts below represent a <strong>Simulated Freight Flow Benchmark</strong> based on NHAI toll plaza capacities.
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {FASTAG_FREIGHT_NODES.map((node) => (
+              <div key={node.tollPlazaId} className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-govblue-700 font-mono">{node.highway}</span>
+                  {renderProvenanceBadge(node.dataCategory)}
+                </div>
+                <h4 className="text-sm font-black text-navy-950">{node.name}</h4>
+                <div className="grid grid-cols-2 gap-2 pt-1 text-xs font-mono text-slate-600">
+                  <div>Truck Flow: <strong className="text-navy-900">{node.commercialTrucksHourly}/hr</strong></div>
+                  <div>Avg Dwell: <strong className="text-navy-900">{node.avgDwellMinutes} mins</strong></div>
+                  <div>Permits: <strong className="text-navy-900">{node.interstatePermitsCleared24h}</strong></div>
+                  <div>Violations: <strong className="text-navy-900">{node.overweightViolations24h}</strong></div>
+                </div>
               </div>
-              <h4 className="text-sm font-black text-navy-950">{node.name}</h4>
-              <div className="grid grid-cols-2 gap-2 pt-1 text-xs font-mono text-slate-600">
-                <div>Truck Flow: <strong className="text-navy-900">{node.commercialTrucksHourly}/hr</strong></div>
-                <div>Avg Dwell: <strong className="text-navy-900">{node.avgDwellMinutes} mins</strong></div>
-                <div>Permits: <strong className="text-navy-900">{node.interstatePermitsCleared24h}</strong></div>
-                <div>Violations: <strong className="text-navy-900">{node.overweightViolations24h}</strong></div>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
       {/* Tab Content 5: Lifelines Directory */}
       {activeTab === 'lifelines' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {EMERGENCY_LIFELINE_DIRECTORY.map((poi) => (
-            <div key={poi.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500 uppercase font-mono">{poi.category}</span>
-                <span className="text-xs font-bold text-govblue-600">{poi.highwayCode}</span>
+        <div className="space-y-3">
+          <div className="p-3 rounded-xl bg-govblue-50 border border-govblue-200 text-xs text-govblue-900 flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 text-govblue-700 shrink-0 mt-0.5" />
+            <span>
+              <strong>Official Verified Registry:</strong> The emergency contact numbers (108 Ambulance, 112 National Emergency, 1077 BRO) and hospital locations below are verified static entries.
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {EMERGENCY_LIFELINE_DIRECTORY.map((poi) => (
+              <div key={poi.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 uppercase font-mono">{poi.category}</span>
+                  {renderProvenanceBadge(poi.dataCategory)}
+                </div>
+                <h4 className="text-sm font-black text-navy-950">{poi.name}</h4>
+                <p className="text-xs text-slate-500 font-medium">{poi.location} • {poi.operationalHours}</p>
+                <div className="p-2 rounded bg-white border border-slate-200 text-xs font-mono text-navy-950">
+                  📞 Contact: <strong>{poi.contactPhone}</strong>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {poi.capabilities.map((cap) => (
+                    <span key={cap} className="px-1.5 py-0.2 rounded bg-slate-200/80 text-[10px] font-semibold text-slate-700">
+                      {cap}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <h4 className="text-sm font-black text-navy-950">{poi.name}</h4>
-              <p className="text-xs text-slate-500 font-medium">{poi.location} • {poi.operationalHours}</p>
-              <div className="p-2 rounded bg-white border border-slate-200 text-xs font-mono text-navy-950">
-                📞 Contact: <strong>{poi.contactPhone}</strong>
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {poi.capabilities.map((cap) => (
-                  <span key={cap} className="px-1.5 py-0.2 rounded bg-slate-200/80 text-[10px] font-semibold text-slate-700">
-                    {cap}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
